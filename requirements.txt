@@ -1,0 +1,9 @@
+numpy
+torch
+torchinfo
+torchvision
+scipy
+scikit-learn
+matplotlib
+ray[air]
+wandb

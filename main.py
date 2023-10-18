@@ -2,12 +2,14 @@ import os
 import multiprocessing
 import torch
 import torchvision.transforms as transforms
+import torch.nn as nn
 from utils.utils import delete_files_folder, has_folder
 from utils.config import load_main_config
 from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor
 from data.dimensionality_reduction import DimensionReducer
 from data.scaling import DataScaler
-
+import torch.optim as optim
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
@@ -90,18 +92,108 @@ if __name__ == '__main__':
     training_dataset = DeliMeatDataset(deli_meat_data_train, scaler=scaler, reducer=reducer, transform=apply_transform)
     testing_dataset = DeliMeatDataset(deli_meat_data_train, scaler=scaler, reducer=reducer, testing=True, transform=apply_transform)
 
-
     first_data = training_dataset[0]
     data, labels = first_data
     print(type(data), type(labels))
 
     # data loader
+    # Extract data and labels from training_dataset
+    x_train = [sample[0] for sample in training_dataset]
+    y_train = [sample[1] for sample in training_dataset]
+
+    # Convert lists to tensors
+    x_train = torch.stack(x_train)
+    y_train = torch.tensor(y_train)
+  
+    # Extract data and labels from testing_dataset
+    x_test = [sample[0] for sample in testing_dataset]
+    y_test = [sample[1] for sample in testing_dataset]
+
+    # Convert lists to tensors
+    x_test = torch.stack(x_test)
+    y_test = torch.tensor(y_test)
+
+    # Move the data and labels to the device
+    x_train = x_train.float().to(device)
+    y_train = y_train.to(device)
+    x_test = x_test.float().to(device)
+    y_test = y_test.to(device)
+
+    # print(x_train.shape, y_train.shape)
+    print(type(x_train), type(y_train))
+
+    # Visualize first data
+    print(f'First data: {x_train[0]}')
+    print(f'First label: {y_train[0]}')
 
     #model
+    model = nn.Sequential(
+        nn.Linear(30, 64),  
+        nn.BatchNorm1d(64),  
+        nn.ReLU(),
+        nn.Dropout(0.5),  
+        nn.Linear(64, 32),  
+        nn.BatchNorm1d(32),  
+        nn.ReLU(),
+        nn.Dropout(0.5),  
+        nn.Linear(32, 4)   
+    )
+    # Move the model to the device
+    model = model.to(device)
 
     # loss and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    print("starting training...")
+    # Initialize lists to store losses for each epoch
+    train_losses = []
+    val_losses = []
 
+    # Training loop
+    for epoch in range(1000): 
+        optimizer.zero_grad()
+        outputs = model(x_train)
+        loss = criterion(outputs, y_train)
+        loss.backward()
+        optimizer.step()
+
+        # Store training loss
+        train_losses.append(loss.item())
+        
+        # Validate the model
+        model.eval()  
+        with torch.no_grad(): 
+            val_outputs = model(x_test)
+            val_loss = criterion(val_outputs, y_test)
+            
+            # Store validation loss
+            val_losses.append(val_loss.item())
+                
+        #  print loss values at certain epochs for checking
+        if epoch % 100 == 0:
+            print(f'Epoch {epoch}, Train Loss: {loss.item()}, Validation Loss: {val_loss.item()}')
+        
+        # Set the model back to training mode
+        model.train()  
+    
+    # Plotting
+    plt.plot(train_losses, label='Training Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title('Training and Validation Losses over Epochs')
+    plt.show()
+
+    # Set the model to evaluation mode
+    model.eval()
+
+    # Testing
+    with torch.no_grad():
+        val_outputs = model(x_test)
+        _, val_preds = torch.max(val_outputs, 1)
+        val_correct = (val_preds == y_test).sum().item()
+        val_accuracy = val_correct / y_test.size(0)
+        print(f'Validation Accuracy: {val_accuracy * 100:.2f}%')
 
 

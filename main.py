@@ -8,6 +8,7 @@ from utils.config import load_main_config
 from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor
 from data.dimensionality_reduction import DimensionReducer
 from data.scaling import DataScaler
+from model.linear_classifier import LinearClassifier
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
@@ -126,18 +127,17 @@ if __name__ == '__main__':
     print(f'First data: {x_train[0]}')
     print(f'First label: {y_train[0]}')
 
-    #model
-    model = nn.Sequential(
-        nn.Linear(30, 64),  
-        nn.BatchNorm1d(64),  
-        nn.ReLU(),
-        nn.Dropout(0.5),  
-        nn.Linear(64, 32),  
-        nn.BatchNorm1d(32),  
-        nn.ReLU(),
-        nn.Dropout(0.5),  
-        nn.Linear(32, 4)   
-    )
+    #Define the model
+    config = {
+        'inputSize': 30,
+        'hiddenSize1': 64,
+        'hiddenSize2': 32,
+        'outputSize': 4
+    }
+
+    model = LinearClassifier.from_config(config)
+    model.summary()
+
     # Move the model to the device
     model = model.to(device)
 

@@ -9,6 +9,7 @@ from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, D
 from data.dimensionality_reduction import DimensionReducer
 from data.scaling import DataScaler
 from model.linear_classifier import LinearClassifier
+from Evaluation.model_tester import ModelTester
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
@@ -185,15 +186,17 @@ if __name__ == '__main__':
     plt.title('Training and Validation Losses over Epochs')
     plt.show()
 
-    # Set the model to evaluation mode
-    model.eval()
 
-    # Testing
-    with torch.no_grad():
-        val_outputs = model(x_test)
-        _, val_preds = torch.max(val_outputs, 1)
-        val_correct = (val_preds == y_test).sum().item()
-        val_accuracy = val_correct / y_test.size(0)
-        print(f'Validation Accuracy: {val_accuracy * 100:.2f}%')
+    # Model Testing:
+    tester = ModelTester(model, criterion, device)
+    average_loss, accuracy, all_preds, all_labels = tester.evaluate(x_test, y_test)
+    print(f"Test Loss: {average_loss:.4f}, Test Accuracy: {accuracy:.4f}")
 
+    # Print classification report
+    tester.print_classification_report(all_labels, all_preds)
 
+    # Plot confusion matrix
+    tester.plot_confusion_matrix(all_labels, all_preds, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
+
+    # Save Model:
+    model_path = os.path.join(result_dir, "model.pth")

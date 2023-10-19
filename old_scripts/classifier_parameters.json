@@ -1,0 +1,15 @@
+{
+  "svm_linear": {"label": "SVM Linear", "kernel": "linear"},
+  "svm_polynomial": {"label": "SVM Polynomial", "kernel": "poly", "degree": 1, "c": 10.0},
+  "svm_rbf": {"label": "SVM RBF", "kernel": "rbf", "gamma": 0.001, "c": 50.0},
+  "gp": {"label": "GP", "kernel": "matern", "length_scale": 1.0, "smoothness": 2.5, "n_restarts": 10,
+  "max_iter_predict": 200},
+  "random_forest": {"label": "Random Forest", "n_estimators": 50, "max_depth": 8},
+  "decision_tree": {"label": "Decision Tree", "max_depth": 10},
+  "ada_boost": {"label": "Ada Boost", "n_estimators": 200, "learning_rate": 1.0, "algorithm": "SAMME.R"},
+  "knn": {"label": "KNN", "n_neighbors": 8, "weights": "distance", "p": 2},
+  "qda": {"label": "QDA"},
+  "mlp": {"label": "MLP", "hidden_layer_sizes": [4, 4, 4], "solver": "sgd", "activation": "relu",
+          "batch_size": 200, "learning_rate_init": 0.01, "learning_rate": "constant", "power_t": 0.5,
+          "momentum": 0.9, "nesterovs_momentum": true}
+}

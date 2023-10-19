@@ -1,0 +1,14 @@
+{
+  "deli_meats_4": {
+    "classes": [0, 1, 2, 3],
+    "colours": ["g", "y", "m", "b"],
+    "labels": ["pork", "chicken", "beef", "turkey"],
+    "styles": ["solid", "dotted", "dashed", "dashdot"]
+  },
+  "deli_meat": {
+    "classes": [0, 1],
+    "colours": ["red", "green"],
+    "labels": ["turkey", "ham"],
+    "styles": ["dotted", "dashed"]
+  }
+} 

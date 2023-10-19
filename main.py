@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 from utils.utils import delete_files_folder, has_folder
 from utils.config import load_main_config
-from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor
+from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor, split_training_validation_deli_data
 from data.dimensionality_reduction import DimensionReducer
 from data.scaling import DataScaler
 from model.linear_classifier import LinearClassifier
@@ -80,7 +80,9 @@ if __name__ == '__main__':
         deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)[1]
 
 
-    # split into training and validation data
+    # split into training and validation data (an example of how to use the function)
+    deli_meat_data_train, deli_meat_data_validation = split_training_validation_deli_data(
+        deli_meat_data_train, split_ratio_training_validation)
 
     # data scaler and dimensionality reduction objects
     scaler = DataScaler(method=scaler_method)

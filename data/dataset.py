@@ -112,6 +112,10 @@ def split_training_validation_deli_data(deli_meat_data, train_validation_split_r
 		validation_indices = np.concatenate((validation_indices, indices_closest[:num_pixels]))
 		training_indices = np.concatenate((training_indices, indices_closest[num_pixels:]))
 
+	# Convert to integer type
+	training_indices = training_indices.astype(int)
+	validation_indices = validation_indices.astype(int)
+
 	print(f"Training pixels: {np.size(training_indices)}, Validation pixels: {np.size(validation_indices)}, Total: {np.size(training_indices) + np.size(validation_indices)}")	
 
 	# return dictionaries for training and validation
@@ -142,6 +146,7 @@ def split_training_validation_deli_data(deli_meat_data, train_validation_split_r
 class DeliMeatDataset(Dataset):
 	def __init__(self, deli_meat_data, scaler, reducer, testing=False, transform=None):
 		self.labels = deli_meat_data["pixel_class"]
+		print(self.labels)
 		self.pixel_location = deli_meat_data["pixel_location"]
 		self.pixel_reflectances = deli_meat_data["pixel_reflectances"]
 		self.transform = transform

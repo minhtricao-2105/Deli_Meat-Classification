@@ -8,8 +8,12 @@ from utils.config import load_main_config
 from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor, split_training_validation_deli_data
 from data.dimensionality_reduction import DimensionReducer
 from data.scaling import DataScaler
-from model.linear_classifier import LinearClassifier
-from Evaluation.model_tester import ModelTester
+from Function.model_tester import ModelTester
+from Function.model_train import ModelTrainer
+from model.linear_classifier_model import LinearClassifier
+from model.neural_network import NNModel
+from torch.utils.data import DataLoader
+
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
@@ -69,16 +73,19 @@ if __name__ == '__main__':
         print("No GPU available.")
 
     # split into training and testing data
-    if training_testing_is_same_dir:
-        deli_meat_data = load_deli_meat_csv(path_training_csv)
-        deli_meat_data_train, deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)
-    else:
-        deli_meat_data = load_deli_meat_csv(path_training_csv)
-        deli_meat_data_train = split_training_testing_deli_data(deli_meat_data)[0]
+    # if training_testing_is_same_dir:
+    #     deli_meat_data = load_deli_meat_csv(path_training_csv)
+    #     deli_meat_data_train, deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)
+    # else:
+    #     deli_meat_data = load_deli_meat_csv(path_training_csv)
+    #     deli_meat_data_train = split_training_testing_deli_data(deli_meat_data)[0]
 
-        deli_meat_data = load_deli_meat_csv(path_testing_csv)
-        deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)[1]
+    #     deli_meat_data = load_deli_meat_csv(path_testing_csv)
+    #     deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)[1]
 
+    # Split into training and testing data:
+    deli_meat_data = load_deli_meat_csv(path_training_csv)
+    deli_meat_data_train, deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)
 
     # split into training and validation data (an example of how to use the function)
     deli_meat_data_train, deli_meat_data_validation = split_training_validation_deli_data(
@@ -93,105 +100,69 @@ if __name__ == '__main__':
         ToTensor()
     ])
 
-    training_dataset = DeliMeatDataset(deli_meat_data_train, scaler=scaler, reducer=reducer, transform=apply_transform)
-    testing_dataset = DeliMeatDataset(deli_meat_data_train, scaler=scaler, reducer=reducer, testing=True, transform=apply_transform)
+    training_dataset   = DeliMeatDataset(deli_meat_data_train, scaler=scaler, reducer=reducer, transform=apply_transform)
+    validation_dataset = DeliMeatDataset(deli_meat_data_validation, scaler=scaler, reducer=reducer, testing = True, transform=apply_transform)
+    testing_dataset = DeliMeatDataset(deli_meat_data_test, scaler=scaler, reducer=reducer, testing=True, transform=apply_transform)
 
-    first_data = training_dataset[0]
-    data, labels = first_data
-    print(type(data), type(labels))
+    data, labels = testing_dataset[37291]
+    print(data, labels)
 
-    # data loader
-    # Extract data and labels from training_dataset
-    x_train = [sample[0] for sample in training_dataset]
-    y_train = [sample[1] for sample in training_dataset]
+    # train_dataloader = DataLoader(training_dataset, batch_size=32)
+    # for i, (data, labels) in enumerate(train_dataloader):
+    #         data, labels = data.to(device), labels.to(device)
+    #         data, labels = data.float(), labels.long()
+    #         print(labels)
 
-    # Convert lists to tensors
-    x_train = torch.stack(x_train)
-    y_train = torch.tensor(y_train)
-  
-    # Extract data and labels from testing_dataset
-    x_test = [sample[0] for sample in testing_dataset]
-    y_test = [sample[1] for sample in testing_dataset]
-
-    # Convert lists to tensors
-    x_test = torch.stack(x_test)
-    y_test = torch.tensor(y_test)
-
-    # Move the data and labels to the device
-    x_train = x_train.float().to(device)
-    y_train = y_train.to(device)
-    x_test = x_test.float().to(device)
-    y_test = y_test.to(device)
-
-    # print(x_train.shape, y_train.shape)
-    print(type(x_train), type(y_train))
-
-    # Visualize first data
-    print(f'First data: {x_train[0]}')
-    print(f'First label: {y_train[0]}')
-
-    #Define the model
-    config = {
+    # Model linear classifier:
+    model_config = {
         'inputSize': 30,
-        'hiddenSize1': 64,
-        'hiddenSize2': 32,
         'outputSize': 4
     }
 
-    model = LinearClassifier.from_config(config)
-    model.summary()
+    # Define Model:
+    model = LinearClassifier.from_config(model_config)
 
-    # Move the model to the device
-    model = model.to(device)
+    # NN Model:
+    # model_config = {
+    #     'input_size': 30,
+    #     'hidden_size1': 64,
+    #     'hidden_size2': 32,
+    #     'output_size': 4
+    # }
 
-    # loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # model = NNModel.from_config(model_config)
 
-    # Initialize lists to store losses for each epoch
-    train_losses = []
-    val_losses = []
+    # Define Loss and Optimizer:
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.SGD(params=model.parameters(), lr=0.01)
 
-    # Training loop
-    for epoch in range(1000): 
-        optimizer.zero_grad()
-        outputs = model(x_train)
-        loss = criterion(outputs, y_train)
-        loss.backward()
-        optimizer.step()
-
-        # Store training loss
-        train_losses.append(loss.item())
-        
-        # Validate the model
-        model.eval()  
-        with torch.no_grad(): 
-            val_outputs = model(x_test)
-            val_loss = criterion(val_outputs, y_test)
-            
-            # Store validation loss
-            val_losses.append(val_loss.item())
-                
-        #  print loss values at certain epochs for checking
-        if epoch % 100 == 0:
-            print(f'Epoch {epoch}, Train Loss: {loss.item()}, Validation Loss: {val_loss.item()}')
-        
-        # Set the model back to training mode
-        model.train()  
+    # Define Model Trainer:
+    trainer_config = {
+        'model': model,
+        'device': device,
+        'train_dataset': training_dataset,
+        'val_dataset': validation_dataset,
+        'batch_size': 32,
+        'optimizer': optimizer,
+        'criterion': criterion
+    }
     
-    # Plotting
-    plt.plot(train_losses, label='Training Loss')
-    plt.plot(val_losses, label='Validation Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.title('Training and Validation Losses over Epochs')
-    plt.show()
+    trainer = ModelTrainer.from_config(trainer_config)
 
+    trainer.train(num_epochs)
 
-    # Model Testing:
-    tester = ModelTester(model, criterion, device)
-    average_loss, accuracy, all_preds, all_labels = tester.evaluate(x_test, y_test)
+    # Define Model Tester:
+    test_config = {
+        'model': model,
+        'criterion': criterion,
+        'device': device,
+        'test_dataset': testing_dataset,
+        'batch_size': 32
+    }
+
+    tester = ModelTester.from_config(test_config)
+
+    average_loss, accuracy, all_preds, all_labels = tester.evaluate()
     print(f"Test Loss: {average_loss:.4f}, Test Accuracy: {accuracy:.4f}")
 
     # Print classification report
@@ -199,6 +170,3 @@ if __name__ == '__main__':
 
     # Plot confusion matrix
     tester.plot_confusion_matrix(all_labels, all_preds, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
-
-    # Save Model:
-    model_path = os.path.join(result_dir, "model.pth")

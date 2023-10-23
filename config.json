@@ -5,9 +5,9 @@
     "result_dir": "/home/minhtricao/Machine_Learning/deli_meats_4",
     "experiment_name": "Deli_Classification",
     "project_name": "deli_meats_classification",
-    "split_ratio_training_validation": 0.8,
+    "split_ratio_training_validation": 0.9,
     "reduction_components": 30,
-    "number_epochs": 100,
+    "number_epochs": 200,
     "preprocessing": {
         "tune": false,
         "reduction_components": 30,

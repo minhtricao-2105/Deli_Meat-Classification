@@ -78,7 +78,7 @@ class DataScaler:
             numpy.ndarray: The normalized data.
         """        
         normalized_data = self.min_range + (data - self.min_value) * (self.max_range - self.min_range) / (self.max_value - self.min_value)
-        np.clip(normalized_data, a_min=self.min_range, a_max=self.max_range)
+        normalized_data = np.clip(normalized_data, a_min=self.min_range, a_max=self.max_range)
         return normalized_data
 
     def standardize(self, data):

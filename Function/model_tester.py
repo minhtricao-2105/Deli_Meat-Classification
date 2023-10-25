@@ -36,10 +36,8 @@ class ModelTester():
                 inputs, labels = inputs.float(), labels.long()
                 
                 # One-hot encode the labels
-                one_hot_labels = self.one_hot_encode(labels, 4).to(self.device)
-
-                output = self.model(inputs)
-                loss = self.criterion(output, one_hot_labels.float())
+                output = self.model(inputs).squeeze()
+                loss = self.criterion(output, labels)
                 total_loss += loss.item()
                 
                 # Get the predicted class (not one-hot encoded)

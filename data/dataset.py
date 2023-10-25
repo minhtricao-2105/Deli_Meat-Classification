@@ -67,6 +67,47 @@ def split_training_testing_deli_data(deli_meat_data):
 	
 	return deli_meat_data_train, deli_meat_data_test
 
+def split_training_validation_deli_data_2(deli_meat_data, train_validation_split_ratio):
+	
+	pixel_class = deli_meat_data["pixel_class"]
+	pixel_location = deli_meat_data["pixel_location"]
+	pixel_reflectances = deli_meat_data["pixel_reflectances"]
+
+	# get ID of each class
+	unique_classes = np.unique(pixel_class)
+
+	training_indices = []
+	validation_indices = []
+
+	for cls in unique_classes:
+		cls_indices = np.where(pixel_class == cls)[0]
+		np.random.shuffle(cls_indices)
+		split_idx = int(train_validation_split_ratio * len(cls_indices))
+		training_indices.extend(cls_indices[:split_idx])
+		validation_indices.extend(cls_indices[split_idx:])
+
+    # Convert lists to numpy arrays for indexing
+	training_indices = np.array(training_indices, dtype=int)
+	validation_indices = np.array(validation_indices, dtype=int)
+
+	print(f"Training pixels: {np.size(training_indices)}, Validation pixels: {np.size(validation_indices)}, Total: {np.size(training_indices) + np.size(validation_indices)}")
+	# Extract training data
+	deli_meat_data_train = {
+    	"pixel_class": pixel_class[training_indices],
+    	"pixel_location": pixel_location[training_indices],
+    	"pixel_reflectances": pixel_reflectances[training_indices]
+    }
+
+    # Extract validation data
+	deli_meat_data_validation = {
+        "pixel_class": pixel_class[validation_indices],
+        "pixel_location": pixel_location[validation_indices],
+        "pixel_reflectances": pixel_reflectances[validation_indices]
+    }
+
+	return deli_meat_data_train, deli_meat_data_validation
+
+
 def split_training_validation_deli_data(deli_meat_data, train_validation_split_ratio):
 	"""Splits initial training deli meat dataset into a training and validation datasets. 
 	This is done by first picking random pixels for each class, and finding the nearest pixels based on Euclidean distance for each class. 
@@ -93,6 +134,8 @@ def split_training_validation_deli_data(deli_meat_data, train_validation_split_r
 	pixel_class_count_validation = [
 		np.floor((1 - train_validation_split_ratio)*np.size(pixel_class[pixel_class==cls])).astype(int) for cls in unique_classes]
 	
+	print(pixel_class_count_validation)
+
 	# pick initial random pixel for each class
 	initial_indices = []
 	for cls in unique_classes:
@@ -106,15 +149,14 @@ def split_training_validation_deli_data(deli_meat_data, train_validation_split_r
 		cls = unique_classes[i]
 		curr_pt = pixel_location[idx]
 		num_pixels = pixel_class_count_validation[i]
-
 		distances = np.linalg.norm(pixel_location[pixel_class == cls, :] - curr_pt, axis=1)
 		indices_closest = np.argsort(distances)
-		validation_indices = np.concatenate((validation_indices, indices_closest[:num_pixels]))
-		training_indices = np.concatenate((training_indices, indices_closest[num_pixels:]))
+		validation_indices.extend(indices_closest[:num_pixels])
+		training_indices.extend(indices_closest[num_pixels:])
 
-	# Convert to integer type
-	training_indices = training_indices.astype(int)
-	validation_indices = validation_indices.astype(int)
+	# Convert lists to numpy arrays for indexing
+	training_indices = np.array(training_indices, dtype=int)
+	validation_indices = np.array(validation_indices, dtype=int)
 
 	print(f"Training pixels: {np.size(training_indices)}, Validation pixels: {np.size(validation_indices)}, Total: {np.size(training_indices) + np.size(validation_indices)}")	
 

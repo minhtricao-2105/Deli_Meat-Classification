@@ -5,7 +5,7 @@ import torchvision.transforms as transforms
 import torch.nn as nn
 from utils.utils import delete_files_folder, has_folder
 from utils.config import load_main_config
-from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor, split_training_validation_deli_data
+from data.dataset import load_deli_meat_csv, split_training_testing_deli_data, DeliMeatDataset, ToTensor, split_training_validation_deli_data, split_training_validation_deli_data_2
 from data.dimensionality_reduction import DimensionReducer
 from data.scaling import DataScaler
 from Function.model_tester import ModelTester
@@ -88,9 +88,9 @@ if __name__ == '__main__':
     deli_meat_data_train, deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)
 
     # split into training and validation data (an example of how to use the function)
-    deli_meat_data_train, deli_meat_data_validation = split_training_validation_deli_data(
+    deli_meat_data_train, deli_meat_data_validation = split_training_validation_deli_data_2(
         deli_meat_data_train, split_ratio_training_validation)
-
+    
     # data scaler and dimensionality reduction objects
     scaler = DataScaler(method=scaler_method)
     reducer = DimensionReducer(n_components=reduction_components, reduction_method=reduction_method)
@@ -104,52 +104,56 @@ if __name__ == '__main__':
     validation_dataset = DeliMeatDataset(deli_meat_data_validation, scaler=scaler, reducer=reducer, testing = True, transform=apply_transform)
     testing_dataset = DeliMeatDataset(deli_meat_data_test, scaler=scaler, reducer=reducer, testing=True, transform=apply_transform)
 
-    data, labels = testing_dataset[37291]
+    data, labels = testing_dataset[20000]
     print(data, labels)
 
-    # train_dataloader = DataLoader(training_dataset, batch_size=32)
-    # for i, (data, labels) in enumerate(train_dataloader):
-    #         data, labels = data.to(device), labels.to(device)
-    #         data, labels = data.float(), labels.long()
-    #         print(labels)
-
     # Model linear classifier:
-    model_config = {
-        'inputSize': 30,
-        'outputSize': 4
-    }
-
-    # Define Model:
-    model = LinearClassifier.from_config(model_config)
-
-    # NN Model:
     # model_config = {
-    #     'input_size': 30,
-    #     'hidden_size1': 64,
-    #     'hidden_size2': 32,
-    #     'output_size': 4
+    #     'inputSize': 30,
+    #     'outputSize': 4
     # }
 
-    # model = NNModel.from_config(model_config)
+    # Define Model:
+    # model = LinearClassifier.from_config(model_config)
+
+    # NN Model:
+    model_config = {
+        'input_size': 30,
+        'hidden_size1': 64,
+        'hidden_size2': 32,
+        'output_size': 4
+    }
+
+    model = NNModel.from_config(model_config)
 
     # Define Loss and Optimizer:
-    criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=0.01)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # Define Model Trainer:
     trainer_config = {
         'model': model,
         'device': device,
         'train_dataset': training_dataset,
-        'val_dataset': validation_dataset,
+        'val_dataset': validation_dataset, 
         'batch_size': 32,
         'optimizer': optimizer,
-        'criterion': criterion
+        'criterion': criterion,
+        'use_BCE': False
     }
     
     trainer = ModelTrainer.from_config(trainer_config)
 
-    trainer.train(num_epochs)
+    train_loss, vali_loss = trainer.train(num_epochs)
+
+    # Plotting the results:
+    plt.plot(train_loss, label='Training Loss')
+    plt.plot(vali_loss, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title('Training and Validation Losses over Epochs')
+    plt.show()
 
     # Define Model Tester:
     test_config = {

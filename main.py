@@ -174,3 +174,5 @@ if __name__ == '__main__':
 
     # Plot confusion matrix
     tester.plot_confusion_matrix(all_labels, all_preds, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
+
+    tester.plot_precision_recall_curve(all_labels, all_preds, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])

@@ -7,7 +7,7 @@
     "project_name": "deli_meats_classification",
     "split_ratio_training_validation": 0.9,
     "reduction_components": 30,
-    "number_epochs": 100,
+    "number_epochs": 10,
     "preprocessing": {
         "tune": false,
         "reduction_components": 30,

@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -23,3 +24,6 @@ class LinearClassifier(nn.Module):
             return instance
         except:
             raise ValueError(f"config missing member variables for {model_class.__name__}")
+        
+
+

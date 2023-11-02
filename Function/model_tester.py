@@ -1,9 +1,14 @@
 import torch
 import numpy as np
 from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import precision_recall_curve
+from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 import seaborn as sns
 from torch.utils.data import DataLoader
+from sklearn.metrics import roc_curve, auc
+from scipy import interp
+from itertools import cycle
 
 class ModelTester():
     """Class for testing a model
@@ -84,6 +89,85 @@ class ModelTester():
         """One-hot encode the labels."""
         return torch.eye(num_classes, device=labels.device)[labels]
 
+    def plot_precision_recall_curve(self, true_labels, predicted_probs, class_names):
+        """ Plot precision-recall curve for each class
+        
+        Args:
+            true_labels (list or np.array): true labels
+            predicted_probs (list or np.array): predicted probabilities for each class
+            class_names (list): list of class names
+        """
+        true_labels = np.array(true_labels)
+        predicted_probs = np.array(predicted_probs)
+
+        # Binarize the labels for multi-class plot
+        true_labels_bin = label_binarize(true_labels, classes=[0, 1, 2, 3])
+        print("Shape of true_labels_bin:", true_labels_bin.shape)
+        print("Shape of predicted_probs:", predicted_probs.shape)
+        
+        if len(predicted_probs.shape) == 1:
+            predicted_probs = predicted_probs[:, np.newaxis]
+
+        n_classes = true_labels_bin.shape[1]
+
+        if predicted_probs.shape[1] != n_classes:
+            raise ValueError("Number of classes in predicted_probs does not match number of classes in true_labels")
+
+        # Compute Precision-Recall and plot curve
+        plt.figure(figsize=(10, 7))
+        for i in range(n_classes):
+            precision, recall, _ = precision_recall_curve(true_labels_bin[:, i], predicted_probs[:, i])
+            plt.plot(recall, precision, lw=2, label=f'Class {class_names[i]}')
+
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall curve')
+        plt.legend(loc="upper right")
+        plt.show()
+
+    def plot_roc_curve(self, true_labels, predicted_probs, class_names):
+        """ Plot ROC curve for each class
+        
+        Args:
+            true_labels (list): true labels
+            predicted_probs (list): predicted probabilities for each class
+            class_names (list): list of class names
+        """
+        # Binarize the labels for multi-class plot
+        true_labels_bin = label_binarize(true_labels, classes=[0, 1, 2, 3])
+        n_classes = true_labels_bin.shape[1]
+
+        # Compute ROC curve and ROC area for each class
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for i in range(n_classes):
+            fpr[i], tpr[i], _ = roc_curve(true_labels_bin[:, i], predicted_probs[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = roc_curve(true_labels_bin.ravel(), predicted_probs.ravel())
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+
+        # Plot ROC curve
+        plt.figure(figsize=(10, 7))
+        plt.plot(fpr["micro"], tpr["micro"],
+                label=f'micro-average ROC curve (area = {roc_auc["micro"]:0.2f})',
+                color='deeppink', linestyle=':', linewidth=4)
+
+        colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'green'])
+        for i, color in zip(range(n_classes), colors):
+            plt.plot(fpr[i], tpr[i], color=color, lw=2,
+                    label=f'ROC curve of class {class_names[i]} (area = {roc_auc[i]:0.2f})')
+
+        plt.plot([0, 1], [0, 1], 'k--', lw=2)
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic')
+        plt.legend(loc="lower right")
+        plt.show()
 
     @classmethod
     def from_config(cls, config):

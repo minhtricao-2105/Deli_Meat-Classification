@@ -113,7 +113,7 @@ if __name__ == '__main__':
     #     'outputSize': 4
     # }
 
-    # Define Model:
+    # # Define Model:
     # model = LinearClassifier.from_config(model_config)
 
     # NN Model:

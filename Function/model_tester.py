@@ -27,6 +27,7 @@ class ModelTester():
         self.device = device
         self.test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
     
+
     def evaluate(self):
         self.model.eval()
         self.model.to(self.device)
@@ -34,6 +35,7 @@ class ModelTester():
         total_correct = 0
         all_preds = []
         all_labels = []
+        all_probs = []
 
         with torch.no_grad():
             for i, (inputs, labels) in enumerate(self.test_dataloader):
@@ -45,6 +47,10 @@ class ModelTester():
                 loss = self.criterion(output, labels)
                 total_loss += loss.item()
                 
+                # Get the predicted probabilities for each class:
+                probs = torch.nn.functional.softmax(output, dim=1)
+                all_probs.extend(probs.cpu().numpy())
+
                 # Get the predicted class (not one-hot encoded)
                 _, preds = torch.max(output, 1)
                 
@@ -55,8 +61,12 @@ class ModelTester():
         average_loss = total_loss / len(self.test_dataloader)
         accuracy = total_correct / len(self.test_dataloader.dataset)
 
-        return average_loss, accuracy, all_preds, all_labels
+        # Convert all_probs to numpy array:
+        all_probs = np.array(all_probs)
+
+        return average_loss, accuracy, all_preds, all_labels, all_probs
     
+
     def print_classification_report(self, true_labels, predicted_labels):
         """Print classification report
 
@@ -66,6 +76,7 @@ class ModelTester():
         """
         result = classification_report(true_labels, predicted_labels)
         print(result)
+
 
     def plot_confusion_matrix(self, true_labels, predicted_lables, class_names):
         """ Plot confusion matrix
@@ -85,9 +96,11 @@ class ModelTester():
         plt.title('Confusion Matrix')
         plt.show()
 
+
     def one_hot_encode(self, labels, num_classes):
         """One-hot encode the labels."""
         return torch.eye(num_classes, device=labels.device)[labels]
+
 
     def plot_precision_recall_curve(self, true_labels, predicted_probs, class_names):
         """ Plot precision-recall curve for each class
@@ -125,6 +138,7 @@ class ModelTester():
         plt.legend(loc="upper right")
         plt.show()
 
+
     def plot_roc_curve(self, true_labels, predicted_probs, class_names):
         """ Plot ROC curve for each class
         
@@ -133,9 +147,16 @@ class ModelTester():
             predicted_probs (list): predicted probabilities for each class
             class_names (list): list of class names
         """
+
+        # Convert to numpy arrays:
+        true_labels = np.array(true_labels)
+        predicted_probs = np.array(predicted_probs)
+
         # Binarize the labels for multi-class plot
         true_labels_bin = label_binarize(true_labels, classes=[0, 1, 2, 3])
         n_classes = true_labels_bin.shape[1]
+
+        print(true_labels_bin.shape, predicted_probs.shape)
 
         # Compute ROC curve and ROC area for each class
         fpr = dict()
@@ -168,6 +189,41 @@ class ModelTester():
         plt.title('Receiver Operating Characteristic')
         plt.legend(loc="lower right")
         plt.show()
+
+    def compute_roc(self):
+        """
+        Compute ROC curve and ROC area for each class
+        """
+        self.model.eval()
+        self.model.to(self.device)
+        true_labels = []
+        predicted_probs = []
+
+        with torch.no_grad():
+            for i, (input, labels) in enumerate(self.test_dataloader):
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                inputs, labels = inputs.float(), labels.long()
+                output = self.model(inputs).squeeze()
+
+                probs = torch.softmax(output, dim=1)
+                true_labels.extend(labels.cpu().numpy())
+                predicted_probs.extend(probs.cpu().numpy())
+        
+        true_labels = np.array(true_labels)
+        predicted_probs = np.array(predicted_probs)
+
+        # Binarize the labels for ROC calculation
+        true_labels_bin = label_binarize(true_labels, classes=[0, 1, 2, 3])
+
+        # Compute ROC curve and ROC area for each class
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for i in range(true_labels_bin.shape[1]):
+            fpr[i], tpr[i], _ = roc_curve(true_labels_bin[:, i], predicted_probs[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+        
+        return fpr, tpr, roc_auc
 
     @classmethod
     def from_config(cls, config):

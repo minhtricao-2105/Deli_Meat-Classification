@@ -37,6 +37,7 @@ if __name__ == '__main__':
     scaler_method = config["preprocessing"]["scaler_method"]
     reduction_components = config["preprocessing"]["reduction_components"]
     reduction_method = config["preprocessing"]["reduction_method"]
+    model_type = config["model_type"]
 
     training_testing_is_same_dir = (path_training == path_testing)
     path_training_csv = os.path.join(path_training, reflectance_type + ".csv")
@@ -72,17 +73,6 @@ if __name__ == '__main__':
     else:
         print("No GPU available.")
 
-    # split into training and testing data
-    # if training_testing_is_same_dir:
-    #     deli_meat_data = load_deli_meat_csv(path_training_csv)
-    #     deli_meat_data_train, deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)
-    # else:
-    #     deli_meat_data = load_deli_meat_csv(path_training_csv)
-    #     deli_meat_data_train = split_training_testing_deli_data(deli_meat_data)[0]
-
-    #     deli_meat_data = load_deli_meat_csv(path_testing_csv)
-    #     deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)[1]
-
     # Split into training and testing data:
     deli_meat_data = load_deli_meat_csv(path_training_csv)
     deli_meat_data_train, deli_meat_data_test = split_training_testing_deli_data(deli_meat_data)
@@ -107,24 +97,21 @@ if __name__ == '__main__':
     data, labels = testing_dataset[20000]
     print(data, labels)
 
-    # Model linear classifier:
-    # model_config = {
-    #     'inputSize': 30,
-    #     'outputSize': 4
-    # }
-
-    # # Define Model:
-    # model = LinearClassifier.from_config(model_config)
-
-    # NN Model:
-    model_config = {
-        'input_size': 30,
-        'hidden_size1': 64,
-        'hidden_size2': 32,
-        'output_size': 4
-    }
-
-    model = NNModel.from_config(model_config)
+    # Define Model:
+    if model_type == "Linear_Classifier":
+        model_config = {
+            'inputSize': 30,
+            'outputSize': 4
+        }
+        model = LinearClassifier.from_config(model_config)
+    elif model_type == "Neural_Network":
+        model_config = {
+            'input_size': 30,
+            'hidden_size1': 64,
+            'hidden_size2': 32,
+            'output_size': 4
+        }
+        model = NNModel.from_config(model_config)
 
     # Define Loss and Optimizer:
     criterion = nn.CrossEntropyLoss()
@@ -166,7 +153,7 @@ if __name__ == '__main__':
 
     tester = ModelTester.from_config(test_config)
 
-    average_loss, accuracy, all_preds, all_labels = tester.evaluate()
+    average_loss, accuracy, all_preds, all_labels, all_probs = tester.evaluate()
     print(f"Test Loss: {average_loss:.4f}, Test Accuracy: {accuracy:.4f}")
 
     # Print classification report
@@ -175,4 +162,11 @@ if __name__ == '__main__':
     # Plot confusion matrix
     tester.plot_confusion_matrix(all_labels, all_preds, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
 
-    tester.plot_precision_recall_curve(all_labels, all_preds, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
+    # Plot ROC curve
+    tester.plot_roc_curve(all_labels, all_probs, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
+
+    # Plot precision-recall curve
+    tester.plot_precision_recall_curve(all_labels, all_probs, class_names=['Pork', 'Chicken', 'Beef', 'Turkey'])
+
+    # Save Model:
+    model_path = os.path.join(result_dir, "model.pt")

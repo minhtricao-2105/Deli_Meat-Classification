@@ -7,12 +7,14 @@
     "project_name": "deli_meats_classification",
     "split_ratio_training_validation": 0.9,
     "reduction_components": 30,
-    "number_epochs": 10,
+    "number_epochs": 100,
     "preprocessing": {
         "tune": false,
         "reduction_components": 30,
         "reduction_method": "FA",
         "scaler_method": "normalize"
     },
-    "tune_hyperparameters": true
+    "tune_hyperparameters": true,
+    "model_type": "Linear_Classifier"
+    
 }

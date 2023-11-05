@@ -1,6 +1,6 @@
 {
-    "path_training": "/home/minhtricao/Machine_Learning/deli_meats_4/flat",
-    "path_testing": "/home/minhtricao/Machine_Learning/deli_meats_4/flat",
+    "path_training": "/home/minhtricao/Machine_Learning/deli_meats_4/curved",
+    "path_testing": "/home/minhtricao/Machine_Learning/deli_meats_4/curved",
     "reflectance_type": "calibrated_reflectance_SVM",
     "result_dir": "/home/minhtricao/Machine_Learning/deli_meats_4",
     "experiment_name": "Deli_Classification",
@@ -15,6 +15,6 @@
         "scaler_method": "normalize"
     },
     "tune_hyperparameters": true,
-    "model_type": "Linear_Classifier"
+    "model_type": "Neural_Network"
     
 }
